@@ -8,9 +8,16 @@ import MainContent from './components/MainContent'
 import Footer from './components/Footer'
 import UserProfile from './components/UserProfile'
 import Counter from './components/Counter'
+import UserContext from './components/UserContext'
+import ProfilePage from './components/ProfilePage'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
+  const userData = {
+    name: 'Ramon Adedotun',
+    email: 'ramon@example.com',
+    role: 'Student'
+  };
 
   return (
     <>
@@ -32,6 +39,9 @@ function App() {
           count is {count}
         </button>
         <Counter />
+        <UserContext.Provider value={userData}>
+        <ProfilePage userData={userData} />
+        </UserContext.Provider>
         <p>
           Edit <code>src/App.jsx</code> and save to test HMR
         </p>
