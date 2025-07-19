@@ -18,7 +18,7 @@ function Navbar(){
             <Link to="/services" style={{textDecoration: 'none', color: 'white', fontWeight: 'bold'}}>Services</Link>
             <Link to="/contact" style={{textDecoration: 'none', color: 'white', fontWeight: 'bold'}}>Contact</Link>
         </nav>
-    )
-}
+    );
+        }
 
 export default Navbar;
