@@ -2,7 +2,6 @@ import axios from 'axios';
 
 const GITHUB_API_KEY = import.meta.env.VITE_APP_GITHUB_API_KEY;
 
-// Optional authorization header if using a token
 const headers = GITHUB_API_KEY
   ? {
       Authorization: `Bearer ${GITHUB_API_KEY}`,
@@ -13,19 +12,46 @@ const headers = GITHUB_API_KEY
     };
 
 /**
- * Fetch GitHub user data based on username.
- * @param {string} username - GitHub username.
- * @returns {Promise<object>} GitHub user data
+ * Fetch a single user's detailed profile by username.
  */
 export const fetchUserData = async (username) => {
   try {
-    const response = await axios.get(`https://api.github.com/users/${username}`, {
+    const res = await axios.get(`https://api.github.com/users/${username}`, {
       headers,
     });
-    return response.data;
+    return res.data;
   } catch (error) {
     throw new Error(
-      error.response?.data?.message || 'Failed to fetch GitHub user'
+      error.response?.data?.message || 'Failed to fetch user'
+    );
+  }
+};
+
+/**
+ * Perform an advanced search for GitHub users based on multiple criteria.
+ * @param {Object} params - Search parameters
+ * @param {string} params.username - Partial or full GitHub username
+ * @param {string} [params.location] - Optional location filter
+ * @param {number} [params.minRepos] - Optional minimum public repositories
+ * @returns {Promise<object>} - GitHub API search results
+ */
+export const searchUsers = async ({ username, location, minRepos }) => {
+  if (!username) throw new Error('Username is required for search.');
+
+  let query = `${username} in:login`;
+
+  if (location) query += ` location:${location}`;
+  if (minRepos) query += ` repos:>=${minRepos}`;
+
+  try {
+    const response = await axios.get(`https://api.github.com/search/users?q=${encodeURIComponent(query)}`, {
+      headers,
+    });
+
+    return response.data; // contains .items and .total_count
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || 'Failed to perform advanced search'
     );
   }
 };
