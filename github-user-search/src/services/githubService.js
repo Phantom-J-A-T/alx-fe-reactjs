@@ -35,7 +35,7 @@ export const fetchUserData = async (username) => {
  * @param {number} [params.minRepos] - Optional minimum public repositories
  * @returns {Promise<object>} - GitHub API search results
  */
-export const searchUsers = async ({ username, location, minRepos }) => {
+export const searchUsers = async ({ username, location, minRepos, page = 1, per_page = 5  }) => {
   if (!username) throw new Error('Username is required for search.');
 
   let query = `${username} in:login`;
@@ -44,9 +44,15 @@ export const searchUsers = async ({ username, location, minRepos }) => {
   if (minRepos) query += ` repos:>=${minRepos}`;
 
   try {
-    const response = await axios.get(`https://api.github.com/search/users?q=${encodeURIComponent(query)}`, {
-      headers,
-    });
+    const response = await await axios.get(
+        `https://api.github.com/search/users?q=${encodeURIComponent(query)}&page=${page}&per_page=${per_page}`,
+        { headers }
+      );
+
+    let query = `${username} in:login`;
+    if (location) query += ` location:${location}`;
+    if (minRepos) query += ` repos:>=${minRepos}`;
+  
 
     return response.data; // contains .items and .total_count
   } catch (error) {

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { fetchUserData } from '../services/githubService';
+import { searchUsers, fetchUserData } from '../services/githubService';
+
+const PER_PAGE = 5;
 
 const Search = () => {
   const [form, setForm] = useState({
@@ -8,7 +10,9 @@ const Search = () => {
     minRepos: '',
   });
 
-  const [user, setUser] = useState(null);
+  const [results, setResults] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -18,119 +22,119 @@ const Search = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     setError('');
-    setUser(null);
+    setResults([]);
+    setPage(1);
 
-    const { username } = form;
-    if (!username.trim()) {
-      setError('Username is required');
-      return;
+    try {
+      const data = await searchUsers({ ...form, page: 1, per_page: PER_PAGE });
+      const detailedUsers = await Promise.all(
+        data.items.map((user) => fetchUserData(user.login))
+      );
+      setResults(detailedUsers);
+      setHasMore(data.total_count > PER_PAGE);
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  };
 
+  const handleLoadMore = async () => {
+    const nextPage = page + 1;
     setLoading(true);
     try {
-      const data = await fetchUserData(username.trim());
-
-      const passesLocation =
-        !form.location || data.location?.toLowerCase().includes(form.location.toLowerCase());
-
-      const passesRepoCheck =
-        !form.minRepos || data.public_repos >= parseInt(form.minRepos, 10);
-
-      if (!passesLocation || !passesRepoCheck) {
-        setError('User found but did not match the additional criteria.');
-      } else {
-        setUser(data);
-      }
-    } catch {
-      setError('Looks like we cant find the user');
+      const data = await searchUsers({ ...form, page: nextPage, per_page: PER_PAGE });
+      const detailedUsers = await Promise.all(
+        data.items.map((user) => fetchUserData(user.login))
+      );
+      setResults((prev) => [...prev, ...detailedUsers]);
+      setPage(nextPage);
+      setHasMore(data.total_count > nextPage * PER_PAGE);
+    } catch (err) {
+      setError('Failed to load more results.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-4">
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-md">
+    <div className="max-w-3xl mx-auto p-4">
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-4">
         <h2 className="text-xl font-semibold text-gray-700">Advanced GitHub User Search</h2>
 
-        <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-            GitHub Username <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            className="w-full mt-1 px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. octocat"
-            value={form.username}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        <input
+          name="username"
+          placeholder="GitHub Username"
+          value={form.username}
+          onChange={handleChange}
+          required
+          className="w-full px-3 py-2 border rounded-md"
+        />
 
-        <div>
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-            Location (optional)
-          </label>
-          <input
-            id="location"
-            name="location"
-            type="text"
-            className="w-full mt-1 px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. Nigeria"
-            value={form.location}
-            onChange={handleChange}
-          />
-        </div>
+        <input
+          name="location"
+          placeholder="Location (optional)"
+          value={form.location}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border rounded-md"
+        />
 
-        <div>
-          <label htmlFor="minRepos" className="block text-sm font-medium text-gray-700">
-            Minimum Repositories (optional)
-          </label>
-          <input
-            id="minRepos"
-            name="minRepos"
-            type="number"
-            min="0"
-            className="w-full mt-1 px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. 10"
-            value={form.minRepos}
-            onChange={handleChange}
-          />
-        </div>
+        <input
+          name="minRepos"
+          type="number"
+          min="0"
+          placeholder="Minimum Repositories (optional)"
+          value={form.minRepos}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border rounded-md"
+        />
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md transition"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
           Search
         </button>
       </form>
 
-      {loading && <p className="text-center mt-4 text-blue-600 font-medium">Loading...</p>}
+      {loading && <p className="text-center mt-4 text-blue-600">Loading...</p>}
+      {error && <p className="text-center mt-4 text-red-500">{error}</p>}
 
-      {error && <p className="text-center mt-4 text-red-500 font-semibold">{error}</p>}
+      <div className="mt-6 space-y-4">
+        {results.map((user) => (
+          <div key={user.id} className="bg-white p-4 rounded shadow flex items-center gap-4">
+            <img
+              src={user.avatar_url}
+              alt={user.login}
+              className="w-16 h-16 rounded-full border"
+            />
+            <div>
+              <h3 className="text-lg font-semibold">{user.name || user.login}</h3>
+              <p className="text-sm text-gray-600">Location: {user.location || 'N/A'}</p>
+              <p className="text-sm text-gray-600">Repos: {user.public_repos}</p>
+              <a
+                href={user.html_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline text-sm"
+              >
+                View Profile
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {user && (
-        <div className="mt-6 bg-white p-4 rounded-md shadow-md text-center">
-          <img
-            src={user.avatar_url}
-            alt={user.login}
-            className="w-24 h-24 mx-auto rounded-full border"
-          />
-          <h3 className="mt-2 text-lg font-semibold">{user.name || user.login}</h3>
-          <p className="text-sm text-gray-600">{user.location || 'No location specified'}</p>
-          <p className="text-sm text-gray-600">{user.public_repos} repositories</p>
-          <a
-            href={user.html_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline mt-2 inline-block"
+      {hasMore && !loading && (
+        <div className="text-center mt-6">
+          <button
+            onClick={handleLoadMore}
+            className="bg-gray-200 hover:bg-gray-300 px-6 py-2 rounded text-sm"
           >
-            Visit GitHub Profile
-          </a>
+            Load More
+          </button>
         </div>
       )}
     </div>
