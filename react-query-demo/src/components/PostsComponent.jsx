@@ -9,19 +9,21 @@ const fetchPosts = async () => {
   return res.json();
 };
 
-function PostsComponent() {
+export default function PostsComponent() {
   const {
     data: posts,
     error,
     isLoading,
     isError,
-    refetch,        // <- function to manually refetch
-    isFetching,     // <- tells us if a background fetch is happening
+    refetch,        // manual refetch function
+    isFetching,     // indicates background refetching
   } = useQuery({
-    queryKey: ["posts"], // unique cache key
+    queryKey: ["posts"],
     queryFn: fetchPosts,
-    staleTime: 1000 * 60 * 5, // 5 min: data stays fresh in cache
-    cacheTime: 1000 * 60 * 10, // 10 min: cache memory before garbage collected
+    staleTime: 1000 * 60 * 5,     // 5 minutes: cache considered "fresh"
+    cacheTime: 1000 * 60 * 10,    // 10 minutes: cache stays in memory
+    refetchOnWindowFocus: true,   // refetch when you tab back to the window
+    keepPreviousData: true,       // keep showing old data while fetching new
   });
 
   if (isLoading) return <p className="text-blue-500">Loading posts...</p>;
@@ -54,5 +56,3 @@ function PostsComponent() {
     </div>
   );
 }
-
-export default PostsComponent;
