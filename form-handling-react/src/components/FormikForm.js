@@ -14,7 +14,7 @@ const validationSchema = Yup.object({
     .required("Password is required"),
 });
 
-function FormikForm() {
+function formikForm() {
   return (
     <Formik
       initialValues={{ username: "", email: "", password: "" }}
@@ -73,4 +73,4 @@ function FormikForm() {
   );
 }
 
-export default FormikForm;
+export default formikForm;
