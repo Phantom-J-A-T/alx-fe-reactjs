@@ -1,12 +1,14 @@
-
 import { useState } from "react";
 import PostsComponent from "./components/PostsComponent";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 function App() {
   const [page, setPage] = useState("home");
+  const queryClient = new QueryClient();
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <QueryClientProvider client={queryClient}>
+      <div className="min-h-screen bg-gray-100 p-6">
       <nav className="mb-6 space-x-4">
         <button
           onClick={() => setPage("home")}
@@ -25,6 +27,8 @@ function App() {
       {page === "home" && <h1 className="text-2xl font-bold">Welcome Home 🚀</h1>}
       {page === "posts" && <PostsComponent />}
     </div>
+    </QueryClientProvider>
+    
   );
 }
 
