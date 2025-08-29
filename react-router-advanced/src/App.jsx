@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import React from "react";
+import { AuthProvider } from "./components/useAuth";
 import { useState } from "react";
 import Profile from "./components/Profile";
 import ProfileDetails from "./components/ProfileDetails";
@@ -12,7 +13,8 @@ function App() {
   const handleLogin = () => setIsAuthenticated(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   return (
-    <Router>
+    <AuthProvider>
+      <Router>
       <Routes>
         <Route path="/profile" element={<Profile />}>
           <Route path="details" element={<ProfileDetails />} />
@@ -30,6 +32,7 @@ function App() {
         </Route>
       </Routes>
     </Router>
+    </AuthProvider>
   );
 }
 
